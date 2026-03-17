@@ -7,7 +7,7 @@
     domain_name: daws-86.shop
   tasks:
     - name: creation of ec2-instances
-      amazon.aws.ec2_instances:
+      amazon.aws.ec2_instance:
         name: "{{ item }}"
         instance_type: "t3.micro"
         security_group: "{{ sg_id }}"
@@ -15,6 +15,7 @@
           Name: "{{ item }}"
       loop: "{{ instances }}"
       register: ec2_output
+
     - name: create record 
       amazon.aws.route53:
         record: "{{ item.item  }}.{{ domain_name }}"
@@ -23,8 +24,9 @@
         ttl: 1
         value: "{{ item.instances[0].private_ip_address }}"
         overwrite: true
-      when: item.item != "frontend"
+      when: item.item != 'frontend'
       loop: "{{ ec2_output.results }}"
+
     - name: create record
       amazon.aws.route53:
         zone: "{{ domain_name }}"
@@ -33,7 +35,7 @@
         ttl: 1
         value: "{{ item.instances[0].public_ip_address}}"
         overwrite: true
-      when: item.item=="frontend"
+      when: item.item=='frontend'
       loop: "{{ ec2_output.results}}"
 
 
