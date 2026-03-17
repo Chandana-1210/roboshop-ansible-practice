@@ -1,0 +1,40 @@
+- name: ec2 instance and r53
+  hosts: local
+  connection: local
+  vars:
+    ami_id: ami-0220d79f3f480ecf5
+    sg_id: sg-0479e9fb6925e23b3
+    domain_name: daws-86.shop
+  tasks:
+    - name: creation of ec2-instances
+      amazon.aws.ec2_instances:
+        name: "{{ item }}"
+        instance_type: "t3.micro"
+        security_group: "{{ sg_id }}"
+        tags:
+          Name: "{{ item }}"
+      loop: "{{ instances }}"
+      register: ec2_output
+    - name: create record 
+      amazon.aws.route53:
+        record: "{{ item.item  }}.{{ domain_name }}"
+        zone: "{{ domain_name }}"
+        type: A 
+        ttl: 1
+        value: "{{ item.instances[0].private_ip_address }}"
+        overwrite: true
+      when: item.item != "frontend"
+      loop: "{{ ec2_output.results }}"
+    - name: create record
+      amazon.aws.route53:
+        zone: "{{ domain_name }}"
+        record: "{{ domain_name }}"
+        type: A 
+        ttl: 1
+        value: "{{ item.instances[0].public_ip_address}}"
+        overwrite: true
+      when: item.item=="frontend"
+      loop: "{{ ec2_output.results}}"
+
+
+  
